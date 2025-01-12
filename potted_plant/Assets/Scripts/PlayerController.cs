@@ -10,9 +10,6 @@ public class PlayerController : MonoBehaviour
 
     private bool grounded = false;
 
-    private float horizontalInput;
-    private float verticalInput;
-
     private BoxCollider2D boxCollider;
     private Rigidbody2D rb;
 
@@ -30,17 +27,18 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        horizontalInput = Input.GetAxis("Horizontal");
+
     }
 
     // Constant clock update
     void FixedUpdate()
     {
-        transform.position = transform.position + new Vector3(horizontalInput * speed, 0, 0);
+
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
+        Debug.Log("JUMP");
         if (grounded)
         {
             Vector2 jumpVelocity = new Vector3(0f, jumpStrength, 0);
@@ -50,13 +48,15 @@ public class PlayerController : MonoBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
+        Vector2 normalVector = new Vector2(1, 0);
+        Debug.Log("MOVE");
         if (grounded) 
         {
-            rb.linearVelocity = context.ReadValue<Vector2>() * speed;
+            rb.linearVelocity = context.ReadValue<Vector2>() * normalVector * speed;
         }
         else 
         {
-            rb.linearVelocity = context.ReadValue<Vector2>() * speed * airSpeed;   
+            rb.linearVelocity = context.ReadValue<Vector2>() * normalVector * speed * airSpeed;   
         }
     }
 
