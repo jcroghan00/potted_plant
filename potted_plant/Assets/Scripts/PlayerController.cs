@@ -194,6 +194,9 @@ public class PlayerController : MonoBehaviour
 
             _isSprintable = true;
         }
+        else {
+            checkGrounded();
+        }
     }
 
     private void OnCollisionStay2D(Collision2D collision)
@@ -303,6 +306,7 @@ public class PlayerController : MonoBehaviour
         return hitRec.collider.gameObject.tag == "Platform";
     }
 
+    /**
     public float gizmoDistance = 0.145f;
     public float gizmoRadius = 0.25f;
 
@@ -321,4 +325,5 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawSphere(newOrigin, radius);
     }
+    */
 }
