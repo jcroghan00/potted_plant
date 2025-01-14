@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -31,12 +32,11 @@ public class PlayerController : MonoBehaviour
 
     private bool _isGrounded;
     private bool _isClimb;
-    private bool _isSprintable;
-    private bool _isSprintReset;
     private bool _isInputEnabled;
     private bool _isFalling;
 
     private float _climbJumpDelay = 0.2f;
+    private float _gravityScale;
 
     private Animator _animator;
     private Rigidbody2D _rigidbody;
@@ -48,13 +48,14 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         _isInputEnabled = true;
-        _isSprintReset = true;
 
         _animator = gameObject.GetComponent<Animator>();
         _rigidbody = gameObject.GetComponent<Rigidbody2D>();
         _transform = gameObject.GetComponent<Transform>();
         _spriteRenderer = gameObject.GetComponent<SpriteRenderer>();
         _boxCollider = gameObject.GetComponent<BoxCollider2D>();
+
+        _gravityScale = _rigidbody.gravityScale;
     }
 
     // Update is called once per frame
@@ -65,13 +66,21 @@ public class PlayerController : MonoBehaviour
         {
             move();
             jump();
+            fall();
         }
     }
 
-    // Constant clock update
-    void FixedUpdate()
+    void OnTriggerEnter2D(Collider2D c) 
     {
+        _isGrounded = c.gameObject.tag == "Platform";
+        jumpLeft = 2;
+    }
 
+    void OnTriggerExit2D(Collider2D c) 
+    {
+        if (c.gameObject.tag == "Platform") {
+            _isGrounded = false;
+        }
     }
 
     public void jump()
@@ -111,14 +120,14 @@ public class PlayerController : MonoBehaviour
         if (!_isClimb)
         {
             // the sprite itself is inversed 
-            float moveDirection = -transform.localScale.x * horizontalMovement;
+            //float moveDirection = -transform.localScale.x * horizontalMovement;
 
-            if (moveDirection < 0)
-            {
-                Vector3 oldScale = transform.localScale;
+            Vector3 oldScale = transform.localScale;
+
+            if (oldScale.x > 0 && horizontalMovement < 0) {
                 // flip player sprite
                 Vector3 newScale;
-                newScale.x = horizontalMovement < 0 ? -oldScale.x : oldScale.x;
+                newScale.x = -oldScale.x;
                 newScale.y = oldScale.y;
                 newScale.z = oldScale.z;
 
@@ -130,11 +139,24 @@ public class PlayerController : MonoBehaviour
                     _animator.SetTrigger("IsRotate");
                 }
             }
-            else if (moveDirection > 0)
-            {
-                // move forward
-                _animator.SetBool("IsRun", true);
+            else if (oldScale.x < 0 && horizontalMovement > 0) {
+                // flip player sprite
+                Vector3 newScale;
+                newScale.x = -oldScale.x;
+                newScale.y = oldScale.y;
+                newScale.z = oldScale.z;
+
+                transform.localScale = newScale;
+
+                if (_isGrounded)
+                {
+                    // turn back animation
+                    _animator.SetTrigger("IsRotate");
+                }
             }
+
+            // move forward
+            _animator.SetBool("IsRun", true);
         }
 
         // stop
@@ -152,28 +174,11 @@ public class PlayerController : MonoBehaviour
 
     private void updatePlayerState()
     {
-        _isGrounded = checkGrounded();
+        //_isGrounded = checkGrounded();
         _animator.SetBool("IsGround", _isGrounded);
 
         float verticalVelocity = _rigidbody.linearVelocity.y;
         _animator.SetBool("IsDown", verticalVelocity < 0);
-
-        if (_isGrounded && verticalVelocity == 0)
-        {
-            _animator.SetBool("IsJump", false);
-            _animator.ResetTrigger("IsJumpFirst");
-            _animator.ResetTrigger("IsJumpSecond");
-            _animator.SetBool("IsDown", false);
-
-            jumpLeft = 2;
-            _isClimb = false;
-            _isSprintable = true;
-        }
-        else if(_isClimb)
-        {
-            // one remaining jump chance after climbing
-            jumpLeft = 1;
-        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -191,11 +196,6 @@ public class PlayerController : MonoBehaviour
 
             _isClimb = true;
             _animator.SetBool("IsClimb", true);
-
-            _isSprintable = true;
-        }
-        else {
-            checkGrounded();
         }
     }
 
@@ -215,7 +215,7 @@ public class PlayerController : MonoBehaviour
             _isClimb = false;
             _animator.SetBool("IsClimb", false);
 
-            _rigidbody.gravityScale = 1;
+            _rigidbody.gravityScale = _gravityScale;
         }
     }
 
@@ -270,60 +270,13 @@ public class PlayerController : MonoBehaviour
 
         _animator.ResetTrigger("IsClimbJump");
 
-        // jump to the opposite direction
+        Vector3 oldScale = transform.localScale;
+        // flip player sprite
         Vector3 newScale;
-        newScale.x = -transform.localScale.x;
-        newScale.y = 1;
-        newScale.z = 1;
+        newScale.x = -oldScale.x;
+        newScale.y = oldScale.y;
+        newScale.z = oldScale.z;
 
         transform.localScale = newScale;
     }
-
-    private bool checkGrounded()
-    {
-        Vector2 origin = _transform.position;
-
-        float radius = 0.19f;
-
-        // detect downwards
-        Vector2 direction;
-        direction.x = 0;
-        direction.y = -1;
-
-        float distance = 2.44f;
-
-        float originX = origin.x;
-        float originY = origin.y - distance;
-
-        Vector2 newOrigin = new Vector2(originX, originY);
-
-        RaycastHit2D hitRec = Physics2D.CircleCast(newOrigin, radius, direction);
-
-        if (hitRec.collider != null) {
-            Debug.Log(hitRec.collider.gameObject.tag);
-        }
-
-        return hitRec.collider.gameObject.tag == "Platform";
-    }
-
-    /**
-    public float gizmoDistance = 0.145f;
-    public float gizmoRadius = 0.25f;
-
-    void OnDrawGizmosSelected()
-    {
-        Vector2 origin = _transform.position;
-
-        float radius = gizmoRadius;
-        float distance = gizmoDistance;
-
-        float originX = origin.x;
-        float originY = origin.y - distance;
-
-        Vector2 newOrigin = new Vector2(originX, originY);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(newOrigin, radius);
-    }
-    */
 }
