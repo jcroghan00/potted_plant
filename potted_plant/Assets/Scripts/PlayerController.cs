@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -10,6 +12,7 @@ public class PlayerController : MonoBehaviour
     public int jumpLeft;
     public Vector2 climbJumpForce;
     public float fallSpeed;
+    public float maxSwingDistance;
     public float sprintSpeed;
     public float sprintTime;
     public float sprintInterval;
@@ -34,9 +37,11 @@ public class PlayerController : MonoBehaviour
     private bool _isClimb;
     private bool _isInputEnabled;
     private bool _isFalling;
+    private bool _isSwinging;
 
     private float _climbJumpDelay = 0.2f;
     private float _gravityScale;
+    private List<GameObject> _swingPoints;
 
     private Animator _animator;
     private Rigidbody2D _rigidbody;
@@ -56,6 +61,7 @@ public class PlayerController : MonoBehaviour
         _boxCollider = gameObject.GetComponent<BoxCollider2D>();
 
         _gravityScale = _rigidbody.gravityScale;
+        _swingPoints = new List<GameObject>();
     }
 
     // Update is called once per frame
@@ -67,6 +73,7 @@ public class PlayerController : MonoBehaviour
             move();
             jump();
             fall();
+            swing();
         }
     }
 
@@ -170,6 +177,16 @@ public class PlayerController : MonoBehaviour
         {
             _animator.ResetTrigger("stopTrigger");
         }
+    }
+
+    public void swing() 
+    {
+        Debug.Log(_swingPoints.Count);
+    }
+
+    public void addSwingPoint(GameObject swingPoint) 
+    {
+        _swingPoints.Append(swingPoint);
     }
 
     private void updatePlayerState()
